@@ -51,7 +51,7 @@ async def create_order( db : db_dependency, user : user_dependancy, order: Order
     
     #order_create = Order(**order.dict())
     order_create = Order(
-        customer_name=order.customer_name,
+        customer_name=user.get("username"),
         customer_order=order.customer_order,
         price=order.price,
         checked_out=order.checked_out,
