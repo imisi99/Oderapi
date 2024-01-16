@@ -62,12 +62,22 @@ async def create_order( db : db_dependency, user : user_dependancy, order: Order
     db.commit()
     db.refresh(order_create)
     return "Order created successfully"
-    
+
+
+class Checked_out(BaseModel):
+    Checked_out : Annotated[bool, Field(False)]
+
+    class Config():
+        json_schema_extra = {
+            'example' : {
+                'checked_out' : False
+            }
+        }
 
 #Update an Order by checked_out
 @order.put("/{order_id}",status_code= 200)
 async def update_order(db : db_dependency, user : user_dependancy,
-                        order : OrderForm,
+                        order : Checked_out,
                         order_id : int = Path(gt=0)):
     update = db.query(Order).filter(order_id == Order.id).filter(Order.user_id == user.get("user_id")).first()
     if user is None:
