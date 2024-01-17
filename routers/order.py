@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Path
-from typing import Annotated
+from typing import Annotated, Optional
 from pydantic import BaseModel, Field
 from schemas.database import engine, begin
 import schemas.model_db as model_db
@@ -20,12 +20,19 @@ db_dependency = Annotated[str, Depends(get_db)]
 user_dependancy = Annotated[str, Depends(GetUser)]
 
 class OrderForm(BaseModel):
-    customer_name: str = Field(min_length = 3, max_length = 20)
-    customer_order : str 
-    price : float = Field(gt = 0)
-    checked_out : bool = Field(False)
+    customer_order : str = Field
+    price : float = Field(gt = 0,example=0)
+    checked_out : Annotated[bool, Field(default=False)]
 
+    class Config:
+        json_schema_extra = {
+            "example" : {
+                "customer_order" : "order",
+                "price" : 0.00,
+                "checked_out" : False
 
+            }
+        }
 #Get all order in db
 @order.get("/")
 async def get_all_orders(db: db_dependency, user : user_dependancy):
@@ -65,7 +72,7 @@ async def create_order( db : db_dependency, user : user_dependancy, order: Order
 
 
 class Checked_out(BaseModel):
-    Checked_out : Annotated[bool, Field(False)]
+    checked_out : Annotated[bool, Field(False)]
 
     class Config():
         json_schema_extra = {
@@ -75,7 +82,7 @@ class Checked_out(BaseModel):
         }
 
 #Update an Order by checked_out
-@order.put("/{order_id}",status_code= 200)
+@order.put("/update/{order_id}",status_code= 200)
 async def update_order(db : db_dependency, user : user_dependancy,
                         order : Checked_out,
                         order_id : int = Path(gt=0)):
@@ -99,7 +106,7 @@ async def update_order(db : db_dependency, user : user_dependancy,
     return "Order has been checked out successfully"
 
 #Delete an order 
-@order.delete("/{order_id}")
+@order.delete("/delete/{order_id}")
 async def delete_order(db : db_dependency, user : user_dependancy,
                        order_id : int = Path(gt=0)):
     delete = db.query(Order).filter(order_id == Order.id).filter(Order.user_id == user.get("user_id")).first()

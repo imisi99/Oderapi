@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr, validator
 from typing import  Annotated
 from passlib.context import CryptContext
 from schemas.database import engine, begin
@@ -10,6 +10,7 @@ from jose import jwt, JWTError
 from datetime import timedelta, datetime
 from starlette.responses import PlainTextResponse
 from sqlalchemy.exc import IntegrityError
+import re
 
 
 user = APIRouter()
@@ -30,6 +31,8 @@ class UserDetails(BaseModel):
     lastname : str
     username : str
     email : str
+
+
 #Hashing the password
 hash = CryptContext(schemes=["bcrypt"], deprecated= "auto")
 
@@ -72,13 +75,37 @@ async def GetUser(token : Annotated[str, Depends(bearer)]):
         raise HTTPException(status_code= 401, detail= "Unautorized acess")
     
 user_dependancy = Annotated[str, Depends(GetUser)]
+
+
 class UserForm(BaseModel):
     first_name : str = Field(min_length=3)
     last_name : str = Field(min_length= 3)
-    email : str 
+    email : EmailStr
     username : str = Field(min_length= 3)
-    password : str
+    password : str = Field(min_length= 8,description= "Password must contain at least 8 characters, one uppercase letter, and one special character.")
 
+    @validator("password")
+    def check_password(cls, value):
+        if len(value) < 8:
+            raise ValueError("Password must be at least 8 characters long")
+        if not any(char.isupper() for char in value):
+            raise ValueError("Password must have at least one uppercase character")
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', value):
+            raise ValueError("Password must have at least one special character")
+
+        return value
+    
+    
+    class Config():
+        json_schema_extra = {
+            'example' : {
+                'first_name' : 'firstname',
+                'last_name' : 'lastname',
+                'username' : 'username',
+                'email' : 'email@gmail.com',
+                'password' : 'password'
+            }
+        }
 #User signup route 
 @user.post("/signup")
 async def user_signup(user : UserForm, db : db_dependency):
@@ -121,10 +148,10 @@ async def user_login(form : Annotated[OAuth2PasswordRequestForm, Depends()], db 
 
 #Changing the user password 
 @user.put("/password/recovery")
-async def forgot_password(db: db_dependency, username : str, new_password : str ):
-    access = db.query(User).filter(username == User.username).first()
+async def forgot_password(db: db_dependency, email : str, new_password : str ):
+    access = db.query(User).filter(email == User.email).first()
     if access is None:
-        raise HTTPException(status_code= 401, detail= "Invalid Username")
+        raise HTTPException(status_code= 401, detail= "Invalid email address")
     
     password = hash.hash(new_password)
     #access.password = user.password
@@ -133,7 +160,7 @@ async def forgot_password(db: db_dependency, username : str, new_password : str 
     db.commit()
     db.refresh(access)
 
-    return "Your password has been changed"
+    return "Your password has been changed successfully"
 
 #To get logged in user details
 @user.get("/details")
@@ -151,7 +178,7 @@ async def get_user_details(db : db_dependency, user : user_dependancy ):
     raise HTTPException(status_code= 404, detail= "User details not found")
 
 #Update the current user details 
-@user.put("/update")
+@user.put("/update-details")
 async def update_details(db : db_dependency, user : user_dependancy, new_data : UserForm):
     access = db.query(User).filter(User.username == user.get("username")).first()
     if access is None:
@@ -183,7 +210,7 @@ async def update_details(db : db_dependency, user : user_dependancy, new_data : 
    
 
 #Delete current user
-@user.delete("/delete")
+@user.delete("/delete-user")
 async def delete_user(db : db_dependency, user : user_dependancy):
     if user is None:
         raise HTTPException(status_code= 401, detail= "Invalid credentials")
