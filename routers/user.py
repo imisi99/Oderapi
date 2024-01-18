@@ -207,7 +207,8 @@ async def update_details(db : db_dependency, user : user_dependancy, new_data : 
     db.commit()
     db.refresh(access)
     return "Details has been updated succesfully"   
-   
+
+
 
 #Delete current user
 @user.delete("/delete-user")
