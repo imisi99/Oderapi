@@ -203,6 +203,9 @@ async def update_details(db : db_dependency, user : user_dependancy, new_data : 
 
     
 
+
+
+
     db.add(access)
     db.commit()
     db.refresh(access)
