@@ -11,6 +11,7 @@ from datetime import timedelta, datetime
 from starlette.responses import PlainTextResponse
 from sqlalchemy.exc import IntegrityError
 import re
+from starlette import status
 
 
 user = APIRouter()
@@ -107,9 +108,9 @@ class UserForm(BaseModel):
             }
         }
 #User signup route 
-@user.post("/signup")
+@user.post("/signup", status_code= status.HTTP_201_CREATED)
 async def user_signup(user : UserForm, db : db_dependency):
-
+    user_created =False
     existing_username = db.query(User).filter((User.username == user.username)).first()
     existing_email = db.query(User).filter(User.email == user.email).first()
     if existing_username:
@@ -129,10 +130,17 @@ async def user_signup(user : UserForm, db : db_dependency):
     db.add(user_model)
     db.commit()
     db.refresh(user_model)
+
+    user_created = True
+
+    if not user_created:
+        raise HTTPException(status_code= 400, detail= "Bad Request")
+    
+
     return "User has been created successfully."
 
 #User login route
-@user.post("/login")
+@user.post("/login", status_code= status.HTTP_202_ACCEPTED)
 async def user_login(form : Annotated[OAuth2PasswordRequestForm, Depends()], db :db_dependency):
     user = Autentication(form.username, form.password, db)
     
@@ -147,9 +155,10 @@ async def user_login(form : Annotated[OAuth2PasswordRequestForm, Depends()], db 
     }
 
 #Changing the user password 
-@user.put("/password/recovery")
-async def forgot_password(db: db_dependency, email : str, new_password : str ):
-    access = db.query(User).filter(email == User.email).first()
+@user.put("/password/recovery",status_code= status.HTTP_202_ACCEPTED)
+async def forgot_password(db: db_dependency, username :str, email : str, new_password : str ):
+    user_password = False
+    access = db.query(User).filter(email == User.email).filter(username ==User.username).first()
     if access is None:
         raise HTTPException(status_code= 401, detail= "Invalid email address")
     
@@ -160,10 +169,15 @@ async def forgot_password(db: db_dependency, email : str, new_password : str ):
     db.commit()
     db.refresh(access)
 
+    user_password = True
+
+    if not user_password:
+        raise HTTPException(status_code= 400, detail= "Bad Request")
+    
     return "Your password has been changed successfully"
 
 #To get logged in user details
-@user.get("/details")
+@user.get("/details", status_code= status.HTTP_200_OK)
 async def get_user_details(db : db_dependency, user : user_dependancy ):
     access = db.query(User).filter(User.username == user.get("username")).first()
 
@@ -175,11 +189,13 @@ async def get_user_details(db : db_dependency, user : user_dependancy ):
             email= access.email
         )
         return data
+    
     raise HTTPException(status_code= 404, detail= "User details not found")
 
 #Update the current user details 
-@user.put("/update-details")
+@user.put("/update-details", status_code= status.HTTP_202_ACCEPTED)
 async def update_details(db : db_dependency, user : user_dependancy, new_data : UserForm):
+    user_update = False
     access = db.query(User).filter(User.username == user.get("username")).first()
     if access is None:
         raise HTTPException(status_code=404, detail= "Error: Invalid login credentials")
@@ -203,19 +219,23 @@ async def update_details(db : db_dependency, user : user_dependancy, new_data : 
 
     
 
-
-
-
     db.add(access)
     db.commit()
     db.refresh(access)
+
+    user_update = True
+
+    if not user_update:
+        raise HTTPException(status_code= 400, detail= "Bad Request")
+    
     return "Details has been updated succesfully"   
 
 
 
 #Delete current user
-@user.delete("/delete-user")
+@user.delete("/delete-user",status_code= status.HTTP_204_NO_CONTENT)
 async def delete_user(db : db_dependency, user : user_dependancy):
+    user_deleted = False
     if user is None:
         raise HTTPException(status_code= 401, detail= "Invalid credentials")
     access = db.query(User).filter(User.username == user.get("username")).first()
@@ -224,4 +244,8 @@ async def delete_user(db : db_dependency, user : user_dependancy):
     
     db.delete(access)
     db.commit()
+    user_deleted = True
+    if not user_deleted:
+        raise HTTPException(status_code= 400, detail= "Bad Request")
+    
     return "User has been deleted successfully"

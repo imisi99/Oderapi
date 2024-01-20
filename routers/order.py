@@ -5,6 +5,7 @@ from schemas.database import engine, begin
 import schemas.model_db as model_db
 from schemas.model_db import Order
 from .user import GetUser
+from starlette import status
 
 order = APIRouter()
 model_db.data.metadata.create_all(bind = engine)
@@ -34,14 +35,14 @@ class OrderForm(BaseModel):
             }
         }
 #Get all order in db
-@order.get("/")
+@order.get("/",status_code= status.HTTP_200_OK)
 async def get_all_orders(db: db_dependency, user : user_dependancy):
 
     return db.query(Order).filter(Order.user_id == user.get("user_id")).all()
 
 
 #Get order by id 
-@order.get("/{order_id}")
+@order.get("/{order_id}",status_code=status.HTTP_200_OK)
 async def get_order_id(order_id : int, db :db_dependency, user : user_dependancy):
     order_data = db.query(Order).filter(Order.id == order_id).filter(Order.user_id == user.get("user_id")).first()
     if order_data is not None:
@@ -51,11 +52,11 @@ async def get_order_id(order_id : int, db :db_dependency, user : user_dependancy
     
 
 #Create an Order
-@order.post("/create")
+@order.post("/create",status_code= status.HTTP_201_CREATED)
 async def create_order( db : db_dependency, user : user_dependancy, order: OrderForm):
     if user is None:
         raise HTTPException(status_code=401, detail= "Unauthorized access")
-    
+    order_created = False
     #order_create = Order(**order.dict())
     order_create = Order(
         customer_name=user.get("username"),
@@ -68,6 +69,11 @@ async def create_order( db : db_dependency, user : user_dependancy, order: Order
     db.add(order_create)
     db.commit()
     db.refresh(order_create)
+    order_created = True
+
+    if not order_created:
+        raise HTTPException(status_code=400, detail="Bad Request")
+    
     return "Order created successfully"
 
 
@@ -82,10 +88,11 @@ class Checked_out(BaseModel):
         }
 
 #Update an Order by checked_out
-@order.put("/update/{order_id}",status_code= 200)
+@order.put("/update/{order_id}",status_code= status.HTTP_202_ACCEPTED)
 async def update_order(db : db_dependency, user : user_dependancy,
                         order : Checked_out,
                         order_id : int = Path(gt=0)):
+    order_updated = False
     update = db.query(Order).filter(order_id == Order.id).filter(Order.user_id == user.get("user_id")).first()
     if user is None:
         raise HTTPException(status_code= 401, detail= "Unauthorized access")
@@ -102,13 +109,17 @@ async def update_order(db : db_dependency, user : user_dependancy,
     db.add(update)
     db.commit()
     db.refresh(update)
-
+    order_updated = True
+    if not order_updated:
+        raise HTTPException(status_code= 400, detail= "Bad Request")
+    
     return "Order has been checked out successfully"
 
 #Delete an order 
-@order.delete("/delete/{order_id}")
+@order.delete("/delete/{order_id}",status_code= status.HTTP_204_NO_CONTENT)
 async def delete_order(db : db_dependency, user : user_dependancy,
                        order_id : int = Path(gt=0)):
+    order_deleted = False
     delete = db.query(Order).filter(order_id == Order.id).filter(Order.user_id == user.get("user_id")).first()
     if user is None:
         raise HTTPException(status_code= 401, detail= "Unauthorized access")
@@ -117,6 +128,8 @@ async def delete_order(db : db_dependency, user : user_dependancy,
     
     db.delete(delete)
     db.commit()
-
-
+    order_deleted = True
+    if not order_deleted:
+        raise HTTPException(status_code=400, detail= "Bad Reques")
+    
     return "Order has been deleted"
