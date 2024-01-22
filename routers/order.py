@@ -130,6 +130,6 @@ async def delete_order(db : db_dependency, user : user_dependancy,
     db.commit()
     order_deleted = True
     if not order_deleted:
-        raise HTTPException(status_code=400, detail= "Bad Reques")
+        raise HTTPException(status_code=400, detail= "Bad Request")
     
     return "Order has been deleted"
