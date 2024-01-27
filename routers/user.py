@@ -249,3 +249,21 @@ async def delete_user(db : db_dependency, user : user_dependancy):
         raise HTTPException(status_code= 400, detail= "Bad Request")
     
     return "User has been deleted successfully"
+
+#Route to get user details
+
+@user.get('/{username}/get-details')
+async def get_user_details(db: db_dependency, username : str ):
+    Found = False
+    if user is None:
+        raise HTTPException(status_code= 404, detail= "User not found")
+    yes = db.query(User).filter(User.username == username).first()
+
+    if not yes:
+        raise HTTPException(status_code= 404, detail= "User not found")
+    Found = True
+
+    if Found is True:
+        return yes
+
+
