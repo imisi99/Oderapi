@@ -12,7 +12,7 @@ from starlette.responses import PlainTextResponse
 from sqlalchemy.exc import IntegrityError
 import re
 from starlette import status
-
+from sqlalchemy.orm import Session
 
 user = APIRouter()
 
@@ -25,7 +25,7 @@ def get_db():
     finally:
         db.close()
 
-db_dependency = Annotated[str, Depends(get_db)]
+db_dependency = Annotated[Session , Depends(get_db)]
 
 class UserDetails(BaseModel):
     firstname : str
@@ -35,6 +35,7 @@ class UserDetails(BaseModel):
 
 
 #Hashing the password
+    
 hash = CryptContext(schemes=["bcrypt"], deprecated= "auto")
 
 #Authentication and Authorization Logic
@@ -78,11 +79,12 @@ async def GetUser(token : Annotated[str, Depends(bearer)]):
 user_dependancy = Annotated[str, Depends(GetUser)]
 
 
+#User form pydantic validation 
 class UserForm(BaseModel):
     first_name : str = Field(min_length=3)
     last_name : str = Field(min_length= 3)
     email : EmailStr
-    username : str = Field(min_length= 3)
+    username : str = Field()
     password : str = Field(min_length= 8,description= "Password must contain at least 8 characters, one uppercase letter, and one special character.")
 
     @validator("password")
@@ -96,6 +98,12 @@ class UserForm(BaseModel):
 
         return value
     
+    @validator("username")
+    def check_username(cls, value):
+        if len(value) < 3 :
+            raise ValueError("Username must be at least 3 characters long")
+
+        return value
     
     class Config():
         json_schema_extra = {
@@ -155,16 +163,40 @@ async def user_login(form : Annotated[OAuth2PasswordRequestForm, Depends()], db 
     }
 
 #Changing the user password 
+class new_form(BaseModel):
+    password : str
+
+    @validator("password")
+    def check_password(cls, value):
+        if len(value) < 8:
+            raise ValueError("Password must be at least 8 character long")
+        if not any(char.isupper() for char in value):
+            raise ValueError("Password must contain at least one upper-case character")
+        if not re.search(r'[!@#$%^&*(),.?:{}|<>]', value):
+            raise ValueError("Password must contain at least one special character")
+            
+        return value
+    
+    class Config():
+        json_schema_extra = {
+            'example' : {
+                "password" : "new-password"
+            }
+        }
+
+      
+            
 @user.put("/password/recovery",status_code= status.HTTP_202_ACCEPTED)
-async def forgot_password(db: db_dependency, username :str, email : str, new_password : str ):
+async def forgot_password(db: db_dependency, username :str, email : str, new_password : new_form):
     user_password = False
     access = db.query(User).filter(email == User.email).filter(username ==User.username).first()
     if access is None:
-        raise HTTPException(status_code= 401, detail= "Invalid email address")
+        raise HTTPException(status_code= 401, detail= "Invalid email address or username!")
     
-    password = hash.hash(new_password)
+
+    passcode = hash.hash(new_password.password)
     #access.password = user.password
-    access.password = password
+    access.password = passcode
     db.add(access)
     db.commit()
     db.refresh(access)
@@ -249,21 +281,5 @@ async def delete_user(db : db_dependency, user : user_dependancy):
         raise HTTPException(status_code= 400, detail= "Bad Request")
     
     return "User has been deleted successfully"
-
-#Route to get user details
-
-@user.get('/{username}/get-details')
-async def get_user_details(db: db_dependency, username : str ):
-    Found = False
-    if user is None:
-        raise HTTPException(status_code= 404, detail= "User not found")
-    yes = db.query(User).filter(User.username == username).first()
-
-    if not yes:
-        raise HTTPException(status_code= 404, detail= "User not found")
-    Found = True
-
-    if Found is True:
-        return yes
 
 
