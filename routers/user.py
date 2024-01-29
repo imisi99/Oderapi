@@ -4,7 +4,7 @@ from typing import  Annotated
 from passlib.context import CryptContext
 from schemas.database import engine, begin
 import schemas.model_db as model_db
-from schemas.model_db import User
+from schemas.model_db import User, Order
 from fastapi.security import  OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import jwt, JWTError
 from datetime import timedelta, datetime
@@ -268,12 +268,18 @@ async def update_details(db : db_dependency, user : user_dependancy, new_data : 
 @user.delete("/delete-user",status_code= status.HTTP_204_NO_CONTENT)
 async def delete_user(db : db_dependency, user : user_dependancy):
     user_deleted = False
+
     if user is None:
         raise HTTPException(status_code= 401, detail= "Invalid credentials")
     access = db.query(User).filter(User.username == user.get("username")).first()
+    order = db.query(Order).filter(Order.user_id == user.get("user_id")).first()
     if access is None:
         raise HTTPException(status_code= 404, detail= "Error : User does not exist")
     
+    if order is None:
+        raise HTTPException(status_code= 404, detail= "User has no order")
+    
+    db.delete(order)
     db.delete(access)
     db.commit()
     user_deleted = True
