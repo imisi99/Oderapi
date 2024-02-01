@@ -18,6 +18,7 @@ user = APIRouter()
 
 #Initializing the db
 model_db.data.metadata.create_all(bind = engine)
+
 def get_db():
     db = begin()
     try:
@@ -272,14 +273,13 @@ async def delete_user(db : db_dependency, user : user_dependancy):
     if user is None:
         raise HTTPException(status_code= 401, detail= "Invalid credentials")
     access = db.query(User).filter(User.username == user.get("username")).first()
-    order = db.query(Order).filter(Order.user_id == user.get("user_id")).first()
+    order = db.query(Order).filter(Order.user_id == user.get("user_id")).delete()
     if access is None:
         raise HTTPException(status_code= 404, detail= "Error : User does not exist")
     
     if order is None:
         raise HTTPException(status_code= 404, detail= "User has no order")
     
-    db.delete(order)
     db.delete(access)
     db.commit()
     user_deleted = True
