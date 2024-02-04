@@ -236,12 +236,12 @@ async def update_details(db : db_dependency, user : user_dependancy, new_data : 
     
 
     existing_username = db.query(User).filter(User.username == new_data.username).first()
-    if existing_username is not None and existing_username.username != user.get("username"):
+    if existing_username is not None and existing_username.username != access.username:
         raise HTTPException(status_code= 400, detail= "Username is already in use")
     
 
     existing_email = db.query(User).filter(User.email == new_data.email).first()
-    if existing_email is not None and existing_email.email != user.get("email"):
+    if existing_email is not None and existing_email.email != access.email:
         raise HTTPException(status_code= 400 , detail= "Email is already in use")
     
 
