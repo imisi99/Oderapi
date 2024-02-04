@@ -6,6 +6,7 @@ import schemas.model_db as model_db
 from schemas.model_db import Order
 from .user import GetUser
 from starlette import status
+from sqlalchemy.orm import Session
 
 order = APIRouter()
 model_db.data.metadata.create_all(bind = engine)
@@ -17,7 +18,7 @@ def get_db():
     finally:
         db.close()
 
-db_dependency = Annotated[str, Depends(get_db)]
+db_dependency = Annotated[Session, Depends(get_db)]
 user_dependancy = Annotated[str, Depends(GetUser)]
 
 class OrderForm(BaseModel):
@@ -43,7 +44,7 @@ async def get_all_orders(db: db_dependency, user : user_dependancy):
 
 #Get order by id 
 @order.get("/{order_id}",status_code=status.HTTP_200_OK)
-async def get_order_id(order_id : int, db :db_dependency, user : user_dependancy):
+async def get_order_id( db :db_dependency, user : user_dependancy, order_id : int = Path(gt=0)):
     order_data = db.query(Order).filter(Order.id == order_id).filter(Order.user_id == user.get("user_id")).first()
     if order_data is not None:
         return order_data

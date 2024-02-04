@@ -68,7 +68,7 @@ async def GetUser(token : Annotated[str, Depends(bearer)]):
         username : str = payload.get("sub")
         user_id : int = payload.get("id")
         if username is None or user_id is None:
-            raise HTTPException(status_code= 401, detail= "Unauthorized Acess")
+            raise HTTPException(status_code= 401, detail= "Unauthorized Access")
         return {
             "username" : username,
             "user_id" : user_id
@@ -152,12 +152,12 @@ async def user_signup(user : UserForm, db : db_dependency):
 @user.post("/login", status_code= status.HTTP_202_ACCEPTED)
 async def user_login(form : Annotated[OAuth2PasswordRequestForm, Depends()], db :db_dependency):
     user = Autentication(form.username, form.password, db)
-    
-    
-
     if not user:
         raise HTTPException(status_code= 401, detail= "Unauthorized access")
+    
     token = access(user.username, user.id, timedelta(minutes=2))
+    if not token:
+        raise HTTPException(status_code= status.HTTP_400_BAD_REQUEST, detail= "Error in trying to log you in please try again later")
     return {
         "access_token" : token,
         "token_type" : "bearer"
@@ -177,6 +177,7 @@ class new_form(BaseModel):
             raise ValueError("Password must contain at least one special character")
             
         return value
+    
     
     class Config():
         json_schema_extra = {
@@ -278,7 +279,7 @@ async def delete_user(db : db_dependency, user : user_dependancy):
         raise HTTPException(status_code= 404, detail= "Error : User does not exist")
     
     if order is None:
-        raise HTTPException(status_code= 404, detail= "User has no order")
+        pass
     
     db.delete(access)
     db.commit()
