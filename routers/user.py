@@ -52,10 +52,10 @@ def Autentication(username : str , password : str, db):
 secret = "272223"
 algorithm = "HS256"
 
-def access(username : str, user_id : int , expire : timedelta):
+def access(username : str, user_id : int , timedelta):
     encode = {"sub": username, "id" : user_id}
-    expired = datetime.utcnow() + expire
-    encode.update({"expired" : expired.isoformat()})
+    expired = datetime.utcnow() + timedelta
+    encode.update({"exp" : expired})
     return jwt.encode(encode, secret, algorithm= algorithm)
 
 #to collect the token
@@ -74,8 +74,9 @@ async def GetUser(token : Annotated[str, Depends(bearer)]):
             "user_id" : user_id
         }
         
-    except JWTError:
-        raise HTTPException(status_code= 401, detail= "Unautorized acess")
+    except JWTError as e:
+        print(f"JWTError occurred: {e}")
+        raise HTTPException(status_code= 401, detail= "Unautorized access")
     
 user_dependancy = Annotated[str, Depends(GetUser)]
 
@@ -166,6 +167,7 @@ async def user_login(form : Annotated[OAuth2PasswordRequestForm, Depends()], db 
 #Changing the user password 
 class new_form(BaseModel):
     password : str
+    confirm_password : str
 
     @validator("password")
     def check_password(cls, value):
@@ -182,7 +184,8 @@ class new_form(BaseModel):
     class Config():
         json_schema_extra = {
             'example' : {
-                "password" : "new-password"
+                "password" : "new-password",
+                "confirm_password" : "comfirm_password"
             }
         }
 
@@ -195,7 +198,9 @@ async def forgot_password(db: db_dependency, username :str, email : str, new_pas
     if access is None:
         raise HTTPException(status_code= 401, detail= "Invalid email address or username!")
     
-
+    if new_password.password != new_password.confirm_password:
+        raise HTTPException(status_code= status.HTTP_422_UNPROCESSABLE_ENTITY, detail= "Password does not match")
+    
     passcode = hash.hash(new_password.password)
     #access.password = user.password
     access.password = passcode
@@ -213,6 +218,9 @@ async def forgot_password(db: db_dependency, username :str, email : str, new_pas
 #To get logged in user details
 @user.get("/details", status_code= status.HTTP_200_OK)
 async def get_user_details(db : db_dependency, user : user_dependancy ):
+    if not user:
+        raise HTTPException(status_code= status.HTTP_401_UNAUTHORIZED, detail= "Unauthorized user")
+    
     access = db.query(User).filter(User.username == user.get("username")).first()
 
     if access is not None:
@@ -229,6 +237,9 @@ async def get_user_details(db : db_dependency, user : user_dependancy ):
 #Update the current user details 
 @user.put("/update-details", status_code= status.HTTP_202_ACCEPTED)
 async def update_details(db : db_dependency, user : user_dependancy, new_data : UserForm):
+    if not user:
+        raise HTTPException(status_code= status.HTTP_401_UNAUTHORIZED, detail= "Unauthorized user")
+    
     user_update = False
     access = db.query(User).filter(User.username == user.get("username")).first()
     if access is None:
