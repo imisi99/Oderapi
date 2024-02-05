@@ -33,7 +33,7 @@ class UserDetails(BaseModel):
     lastname : str
     username : str
     email : str
-
+    phone_number :str
 
 #Hashing the password
     
@@ -88,6 +88,7 @@ class UserForm(BaseModel):
     email : EmailStr
     username : str = Field()
     password : str = Field(min_length= 8,description= "Password must contain at least 8 characters, one uppercase letter, and one special character.")
+    phone_number : str = Field()
 
     @validator("password")
     def check_password(cls, value):
@@ -114,9 +115,11 @@ class UserForm(BaseModel):
                 'last_name' : 'lastname',
                 'username' : 'username',
                 'email' : 'email@gmail.com',
-                'password' : 'password'
+                'password' : 'password',
+                'phone_number' : "+123-4567-8912-34"
             }
         }
+
 #User signup route 
 @user.post("/signup", status_code= status.HTTP_201_CREATED)
 async def user_signup(user : UserForm, db : db_dependency):
@@ -133,7 +136,8 @@ async def user_signup(user : UserForm, db : db_dependency):
         last_name = user.last_name,
         email = user.email,
         username = user.username,
-        password = hash.hash(user.password)
+        password = hash.hash(user.password),
+        phone_number = user.phone_number
 
     )
     
@@ -192,11 +196,11 @@ class new_form(BaseModel):
       
             
 @user.put("/password/recovery",status_code= status.HTTP_202_ACCEPTED)
-async def forgot_password(db: db_dependency, username :str, email : str, new_password : new_form):
+async def forgot_password(db: db_dependency, username :str, email : str, phone_number : str, new_password : new_form):
     user_password = False
-    access = db.query(User).filter(email == User.email).filter(username ==User.username).first()
+    access = db.query(User).filter(email == User.email).filter(username ==User.username).filter(User.phone_number == phone_number).first()
     if access is None:
-        raise HTTPException(status_code= 401, detail= "Invalid email address or username!")
+        raise HTTPException(status_code= 401, detail= "Invalid Credentials!")
     
     if new_password.password != new_password.confirm_password:
         raise HTTPException(status_code= status.HTTP_422_UNPROCESSABLE_ENTITY, detail= "Password does not match")
@@ -221,15 +225,17 @@ async def get_user_details(db : db_dependency, user : user_dependancy ):
     if not user:
         raise HTTPException(status_code= status.HTTP_401_UNAUTHORIZED, detail= "Unauthorized user")
     
-    access = db.query(User).filter(User.username == user.get("username")).first()
+    access = db.query(User).filter(User.id == user.get("user_id")).first()
 
     if access is not None:
         data = UserDetails(
             firstname= access.first_name,
             lastname= access.last_name,
             username= access.username,
-            email= access.email
+            email= access.email,
+            phone_number = access.phone_number
         )
+
         return data
     
     raise HTTPException(status_code= 404, detail= "User details not found")
@@ -260,6 +266,7 @@ async def update_details(db : db_dependency, user : user_dependancy, new_data : 
     access.last_name = new_data.last_name
     access.email = new_data.email
     access.username = new_data.username
+    access.phone_number = new_data.phone_number
     access.password = hash.hash(new_data.password)
 
     

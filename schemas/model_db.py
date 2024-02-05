@@ -27,3 +27,4 @@ class User(data):
     email = Column(String, unique = True, nullable= False)
     username = Column(String, unique= True, nullable= False)
     password = Column(String, nullable= False)
+    phone_number = Column(String, nullable= False, unique= True)
