@@ -2,7 +2,7 @@ from fastapi.testclient import TestClient
 from main import app
 import pytest
 from unittest.mock import patch, MagicMock
-from model_db import Order
+from schemas.model_db import Order
 
 client = TestClient(app)
 

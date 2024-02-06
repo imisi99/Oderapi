@@ -126,11 +126,17 @@ async def user_signup(user : UserForm, db : db_dependency):
     user_created =False
     existing_username = db.query(User).filter((User.username == user.username)).first()
     existing_email = db.query(User).filter(User.email == user.email).first()
+    existing_phone_number = db.query(User).filter(User.phone_number == user.phone_number).first()
+
     if existing_username:
-        raise HTTPException(status_code= 400, detail= "username is already in use")
+        raise HTTPException(status_code= status.HTTP_226_IM_USED, detail= "username is already in use")
     
     if existing_email:
-        raise HTTPException(status_code= 400, detail= "email is already in use")
+        raise HTTPException(status_code= status.HTTP_226_IM_USED, detail= "email is already in use")
+    
+    if existing_phone_number:
+        raise HTTPException(status_code= status.HTTP_226_IM_USED, detail= "Phone number is already in use")
+    
     user_model = User(
         first_name = user.first_name,
         last_name = user.last_name,
@@ -200,7 +206,7 @@ async def forgot_password(db: db_dependency, username :str, email : str, phone_n
     user_password = False
     access = db.query(User).filter(email == User.email).filter(username ==User.username).filter(User.phone_number == phone_number).first()
     if access is None:
-        raise HTTPException(status_code= 401, detail= "Invalid Credentials!")
+        raise HTTPException(status_code= status.HTTP_401_UNAUTHORIZED, detail= "Invalid Credentials!")
     
     if new_password.password != new_password.confirm_password:
         raise HTTPException(status_code= status.HTTP_422_UNPROCESSABLE_ENTITY, detail= "Password does not match")
@@ -215,9 +221,10 @@ async def forgot_password(db: db_dependency, username :str, email : str, phone_n
     user_password = True
 
     if not user_password:
-        raise HTTPException(status_code= 400, detail= "Bad Request")
+        raise HTTPException(status_code= status.HTTP_400_BAD_REQUEST, detail= "Bad Request")
     
     return "Your password has been changed successfully"
+
 
 #To get logged in user details
 @user.get("/details", status_code= status.HTTP_200_OK)
@@ -238,7 +245,8 @@ async def get_user_details(db : db_dependency, user : user_dependancy ):
 
         return data
     
-    raise HTTPException(status_code= 404, detail= "User details not found")
+    raise HTTPException(status_code= status.HTTP_404_NOT_FOUND, detail= "User details not found")
+
 
 #Update the current user details 
 @user.put("/update-details", status_code= status.HTTP_202_ACCEPTED)
@@ -249,17 +257,21 @@ async def update_details(db : db_dependency, user : user_dependancy, new_data : 
     user_update = False
     access = db.query(User).filter(User.username == user.get("username")).first()
     if access is None:
-        raise HTTPException(status_code=404, detail= "Error: Invalid login credentials")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail= "Error: Invalid login credentials")
     
 
     existing_username = db.query(User).filter(User.username == new_data.username).first()
     if existing_username is not None and existing_username.username != access.username:
-        raise HTTPException(status_code= 400, detail= "Username is already in use")
+        raise HTTPException(status_code= status.HTTP_226_IM_USED, detail= "Username is already in use")
     
 
     existing_email = db.query(User).filter(User.email == new_data.email).first()
     if existing_email is not None and existing_email.email != access.email:
-        raise HTTPException(status_code= 400 , detail= "Email is already in use")
+        raise HTTPException(status_code= status.HTTP_226_IM_USED , detail= "Email is already in use")
+    
+    existing_phone_number = db.query(User).filter(User.phone_number == new_data.phone_number).first()
+    if existing_phone_number is not None and existing_phone_number.phone_number != access.phone_number:
+        raise HTTPException(status_code=status.HTTP_226_IM_USED, detail= "Phone_number is already in use")
     
 
     access.first_name = new_data.first_name
@@ -278,7 +290,7 @@ async def update_details(db : db_dependency, user : user_dependancy, new_data : 
     user_update = True
 
     if not user_update:
-        raise HTTPException(status_code= 400, detail= "Bad Request")
+        raise HTTPException(status_code= status.HTTP_400_BAD_REQUEST, detail= "Bad Request")
     
     return "Details has been updated succesfully"   
 
@@ -290,11 +302,11 @@ async def delete_user(db : db_dependency, user : user_dependancy):
     user_deleted = False
 
     if user is None:
-        raise HTTPException(status_code= 401, detail= "Invalid credentials")
+        raise HTTPException(status_code= status.HTTP_401_UNAUTHORIZED, detail= "Invalid credentials")
     access = db.query(User).filter(User.username == user.get("username")).first()
     order = db.query(Order).filter(Order.user_id == user.get("user_id")).delete()
     if access is None:
-        raise HTTPException(status_code= 404, detail= "Error : User does not exist")
+        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail= "Error : User does not exist")
     
     if order is None:
         pass
