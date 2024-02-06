@@ -36,14 +36,14 @@ class OrderForm(BaseModel):
             }
         }
 #Get all order in db
-@order.get("/",status_code= status.HTTP_200_OK)
+@order.get("/",status_code= status.HTTP_200_OK, response_description= {200 : {"description" : "Getting all of user order"}})
 async def get_all_orders(db: db_dependency, user : user_dependancy):
 
     return db.query(Order).filter(Order.user_id == user.get("user_id")).all()
 
 
 #Get order by id 
-@order.get("/{order_id}",status_code=status.HTTP_200_OK)
+@order.get("/{order_id}",status_code=status.HTTP_200_OK, response_description= {200 : { "description" : "Getting order by order_id"}})
 async def get_order_id( db :db_dependency, user : user_dependancy, order_id : int = Path(gt=0)):
     order_data = db.query(Order).filter(Order.id == order_id).filter(Order.user_id == user.get("user_id")).first()
     if order_data is not None:
@@ -53,7 +53,7 @@ async def get_order_id( db :db_dependency, user : user_dependancy, order_id : in
     
 
 #Create an Order
-@order.post("/create",status_code= status.HTTP_201_CREATED)
+@order.post("/create",status_code= status.HTTP_201_CREATED, response_description= {201 : {"description" : "User has successfully created an order"}})
 async def create_order( db : db_dependency, user : user_dependancy, order: OrderForm):
     if user is None:
         raise HTTPException(status_code=401, detail= "Unauthorized access")
@@ -89,7 +89,7 @@ class Checked_out(BaseModel):
         }
 
 #Update an Order by checked_out
-@order.put("/update/{order_id}",status_code= status.HTTP_202_ACCEPTED)
+@order.put("/update/{order_id}",status_code= status.HTTP_202_ACCEPTED, response_description= {202 : {"description" : "User has checked out order"}})
 async def update_order(db : db_dependency, user : user_dependancy,
                         order : Checked_out,
                         order_id : int = Path(gt=0)):
@@ -117,7 +117,7 @@ async def update_order(db : db_dependency, user : user_dependancy,
     return "Order has been checked out successfully"
 
 #Delete an order 
-@order.delete("/delete/{order_id}",status_code= status.HTTP_204_NO_CONTENT)
+@order.delete("/delete/{order_id}",status_code= status.HTTP_204_NO_CONTENT, response_description= {204 : {"description" : "User has  deleted an order"}})
 async def delete_order(db : db_dependency, user : user_dependancy,
                        order_id : int = Path(gt=0)):
     order_deleted = False

@@ -121,7 +121,7 @@ class UserForm(BaseModel):
         }
 
 #User signup route 
-@user.post("/signup", status_code= status.HTTP_201_CREATED)
+@user.post("/signup", status_code= status.HTTP_201_CREATED, response_description= {201 : {"description" : "User has successfully signed up"}})
 async def user_signup(user : UserForm, db : db_dependency):
     user_created =False
     existing_username = db.query(User).filter((User.username == user.username)).first()
@@ -160,7 +160,7 @@ async def user_signup(user : UserForm, db : db_dependency):
     return "User has been created successfully."
 
 #User login route
-@user.post("/login", status_code= status.HTTP_202_ACCEPTED)
+@user.post("/login", status_code= status.HTTP_202_ACCEPTED, response_description= {202 : {"description" : "User has successfully logged in"}})
 async def user_login(form : Annotated[OAuth2PasswordRequestForm, Depends()], db :db_dependency):
     user = Autentication(form.username, form.password, db)
     if not user:
@@ -201,7 +201,7 @@ class new_form(BaseModel):
 
       
             
-@user.put("/password/recovery",status_code= status.HTTP_202_ACCEPTED)
+@user.put("/password/recovery",status_code= status.HTTP_202_ACCEPTED, response_description= {202 : {"description" : "User password has been changed successfully"}})
 async def forgot_password(db: db_dependency, username :str, email : str, phone_number : str, new_password : new_form):
     user_password = False
     access = db.query(User).filter(email == User.email).filter(username ==User.username).filter(User.phone_number == phone_number).first()
@@ -227,7 +227,7 @@ async def forgot_password(db: db_dependency, username :str, email : str, phone_n
 
 
 #To get logged in user details
-@user.get("/details", status_code= status.HTTP_200_OK)
+@user.get("/details", status_code= status.HTTP_200_OK, response_description= {200 : {"description" : "User has rceived details successfully"}})
 async def get_user_details(db : db_dependency, user : user_dependancy ):
     if not user:
         raise HTTPException(status_code= status.HTTP_401_UNAUTHORIZED, detail= "Unauthorized user")
@@ -249,7 +249,7 @@ async def get_user_details(db : db_dependency, user : user_dependancy ):
 
 
 #Update the current user details 
-@user.put("/update-details", status_code= status.HTTP_202_ACCEPTED)
+@user.put("/update-details", status_code= status.HTTP_202_ACCEPTED, response_description= {202 : {"description" : "User data has been updated successfully"}})
 async def update_details(db : db_dependency, user : user_dependancy, new_data : UserForm):
     if not user:
         raise HTTPException(status_code= status.HTTP_401_UNAUTHORIZED, detail= "Unauthorized user")
@@ -297,7 +297,7 @@ async def update_details(db : db_dependency, user : user_dependancy, new_data : 
 
 
 #Delete current user
-@user.delete("/delete-user",status_code= status.HTTP_204_NO_CONTENT)
+@user.delete("/delete-user",status_code= status.HTTP_204_NO_CONTENT, response_description= {204 : {"description" : "User data has been deleted successfully"}})
 async def delete_user(db : db_dependency, user : user_dependancy):
     user_deleted = False
 
