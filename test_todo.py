@@ -9,6 +9,7 @@ from routers.user import GetUser
 from schemas.database import data
 import main
 from pytest import fixture
+import pytest
 
 database = "sqlite:///.testdb.sqlite"
 engine = create_engine(
@@ -41,7 +42,7 @@ def test_read_all_order():
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == "Welcome to the number one food delivery in Nigeria"
 
-@fixture
+@pytest.fixture()
 orderform = Order(
     id = 1,
     customer_name = "Imsioluwa",
