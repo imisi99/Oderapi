@@ -45,7 +45,7 @@ def test_read_all_order():
 @pytest.fixture()
 orderform = Order(
     id = 1,
-    customer_name = "Imsioluwa",
+    customer_name = "Imisioluwa23",
     customer_order = "Pizza",
     checked_out = False,
     price = 3.99,

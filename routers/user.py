@@ -103,10 +103,11 @@ class UserForm(BaseModel):
     
     @validator("username")
     def check_username(cls, value):
-        if len(value) < 3 :
-            raise ValueError("Username must be at least 3 characters long")
-
-        return value
+        if len(value) < 8 :
+            raise ValueError("Username must be at least 8 characters long")
+        if len(value) > 12 :
+            raise ValueError("Username is too long")
+        return value.replace(" ", "")
     
     class Config():
         json_schema_extra = {
