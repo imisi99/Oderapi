@@ -9,7 +9,7 @@ class Order(data):
     customer_order = Column(String(500), nullable= False)
     price = Column(Float, nullable = False)
     checked_out = Column(Boolean, default = False)
-    user_id = Column(Integer, ForeignKey("user.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
 
     # def __init__(self, customer_name, customer_order, price, checked_out):
     #     self.customer_name = customer_name

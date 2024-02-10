@@ -13,11 +13,16 @@ from sqlalchemy.exc import IntegrityError
 import re
 from starlette import status
 from sqlalchemy.orm import Session
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+
 
 user = APIRouter()
 
 #Initializing the db
 model_db.data.metadata.create_all(bind = engine)
+
+templates = Jinja2Templates(directory= "templates")
 
 def get_db():
     db = begin()
@@ -68,7 +73,7 @@ async def GetUser(token : Annotated[str, Depends(bearer)]):
         username : str = payload.get("sub")
         user_id : int = payload.get("id")
         if username is None or user_id is None:
-            raise HTTPException(status_code= 401, detail= "Unauthorized Access")
+            raise HTTPException(status_code= status.HTTP_401_UNAUTHORIZED, detail= "Unauthorized Access")
         return {
             "username" : username,
             "user_id" : user_id
@@ -76,7 +81,7 @@ async def GetUser(token : Annotated[str, Depends(bearer)]):
         
     except JWTError as e:
         print(f"JWTError occurred: {e}")
-        raise HTTPException(status_code= 401, detail= "Unautorized access")
+        raise HTTPException(status_code= status.HTTP_401_UNAUTHORIZED, detail= "Unautorized access")
     
 user_dependancy = Annotated[str, Depends(GetUser)]
 
@@ -155,7 +160,7 @@ async def user_signup(user : UserForm, db : db_dependency):
     user_created = True
 
     if not user_created:
-        raise HTTPException(status_code= 400, detail= "Bad Request")
+        raise HTTPException(status_code= status.HTTP_400_BAD_REQUEST, detail= "Bad Request")
     
 
     return "User has been created successfully."
@@ -165,7 +170,7 @@ async def user_signup(user : UserForm, db : db_dependency):
 async def user_login(form : Annotated[OAuth2PasswordRequestForm, Depends()], db :db_dependency):
     user = Autentication(form.username, form.password, db)
     if not user:
-        raise HTTPException(status_code= 401, detail= "Unauthorized access")
+        raise HTTPException(status_code= status.HTTP_401_UNAUTHORIZED, detail= "Unauthorized access")
     
     token = access(user.username, user.id, timedelta(minutes=2))
     if not token:

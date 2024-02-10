@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Path
+from fastapi import APIRouter, Depends, HTTPException, Path, Request
 from typing import Annotated, Optional
 from pydantic import BaseModel, Field
 from schemas.database import engine, begin
@@ -7,9 +7,14 @@ from schemas.model_db import Order
 from .user import GetUser
 from starlette import status
 from sqlalchemy.orm import Session
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+
 
 order = APIRouter()
 model_db.data.metadata.create_all(bind = engine)
+template = Jinja2Templates(directory= "templates")
+
 
 def get_db():
     db = begin()
@@ -30,11 +35,14 @@ class OrderForm(BaseModel):
         json_schema_extra = {
             "example" : {
                 "customer_order" : "order",
-                "price" : 0.00,
-                "checked_out" : False
+                "price" : 0.00
 
             }
         }
+
+@order.get("/test")
+async def test(request : Request):
+    return template.TemplateResponse("edit-todo.html", {"request" : request})
 #Get all order in db
 @order.get("/",status_code= status.HTTP_200_OK, response_description= {200 : {"description" : "Getting all of user order"}})
 async def get_all_orders(db: db_dependency, user : user_dependancy):
@@ -49,21 +57,21 @@ async def get_order_id( db :db_dependency, user : user_dependancy, order_id : in
     if order_data is not None:
         return order_data
     else:
-        raise HTTPException (status_code=404, detail= "Order not found")
+        raise HTTPException (status_code=status.HTTP_404_NOT_FOUND, detail= "Order not found")
     
 
 #Create an Order
 @order.post("/create",status_code= status.HTTP_201_CREATED, response_description= {201 : {"description" : "User has successfully created an order"}})
 async def create_order( db : db_dependency, user : user_dependancy, order: OrderForm):
     if user is None:
-        raise HTTPException(status_code=401, detail= "Unauthorized access")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail= "Unauthorized access")
     order_created = False
     #order_create = Order(**order.dict())
     order_create = Order(
         customer_name=user.get("username"),
         customer_order=order.customer_order,
         price=order.price,
-        checked_out=order.checked_out,
+        checked_out=False,
         user_id = user.get("user_id")
     )
 
@@ -73,7 +81,7 @@ async def create_order( db : db_dependency, user : user_dependancy, order: Order
     order_created = True
 
     if not order_created:
-        raise HTTPException(status_code=400, detail="Bad Request")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bad Request")
     
     return "Order created successfully"
 
@@ -96,9 +104,9 @@ async def update_order(db : db_dependency, user : user_dependancy,
     order_updated = False
     update = db.query(Order).filter(order_id == Order.id).filter(Order.user_id == user.get("user_id")).first()
     if user is None:
-        raise HTTPException(status_code= 401, detail= "Unauthorized access")
+        raise HTTPException(status_code= status.HTTP_401_UNAUTHORIZED, detail= "Unauthorized access")
     if update is None:
-        raise HTTPException(status_code= 404, detail= "Order not found")
+        raise HTTPException(status_code= status.HTTP_404_NOT_FOUND, detail= "Order not found")
     
     # Uploading just the checked_out if user has paid
 
@@ -112,7 +120,7 @@ async def update_order(db : db_dependency, user : user_dependancy,
     db.refresh(update)
     order_updated = True
     if not order_updated:
-        raise HTTPException(status_code= 400, detail= "Bad Request")
+        raise HTTPException(status_code= status.HTTP_404_NOT_FOUND, detail= "Bad Request")
     
     return "Order has been checked out successfully"
 
@@ -123,14 +131,14 @@ async def delete_order(db : db_dependency, user : user_dependancy,
     order_deleted = False
     delete = db.query(Order).filter(order_id == Order.id).filter(Order.user_id == user.get("user_id")).first()
     if user is None:
-        raise HTTPException(status_code= 401, detail= "Unauthorized access")
+        raise HTTPException(status_code= status.HTTP_401_UNAUTHORIZED, detail= "Unauthorized access")
     if delete is None:
-        raise HTTPException(status_code= 404, detail= "Order not found")
+        raise HTTPException(status_code= status.HTTP_404_NOT_FOUND, detail= "Order not found")
     
     db.delete(delete)
     db.commit()
     order_deleted = True
     if not order_deleted:
-        raise HTTPException(status_code=400, detail= "Bad Request")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail= "Bad Request")
     
     return "Order has been deleted"
