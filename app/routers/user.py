@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, EmailStr, validator
 from typing import  Annotated
 from passlib.context import CryptContext
-from schemas.database import engine, begin
-import schemas.model_db as model_db
-from schemas.model_db import User, Order
+from ..schemas.database import engine, begin
+from ..schemas import model_db as model_db
+from ..schemas.model_db import User, Order
 from fastapi.security import  OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import jwt, JWTError
 from datetime import timedelta, datetime
@@ -22,7 +22,7 @@ user = APIRouter()
 #Initializing the db
 model_db.data.metadata.create_all(bind = engine)
 
-templates = Jinja2Templates(directory= "templates")
+templates = Jinja2Templates(directory= "app/templates")
 
 def get_db():
     db = begin()

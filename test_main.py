@@ -1,5 +1,5 @@
 from fastapi.testclient import TestClient
-from main import app
+from AltSchool.Orderapi.app.main import app
 import pytest
 from unittest.mock import patch, MagicMock
 from schemas.model_db import Order

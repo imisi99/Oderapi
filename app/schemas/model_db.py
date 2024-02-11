@@ -1,4 +1,4 @@
-from schemas.database import data
+from .database import data
 from sqlalchemy import Column, Float, Integer, String, Boolean, ForeignKey
 
 class Order(data):

@@ -1,11 +1,11 @@
 from starlette import status
-from schemas.model_db import Order
-from utils import *
-from routers.order import get_db, GetUser
+from app.schemas.model_db import Order
+from app.routers.order import get_db, GetUser
+from .utils import *
 
 
-main.app.dependency_overrides[get_db] = overide_get_db
-main.app.dependency_overrides[GetUser] = overide_get_user
+app.dependency_overrides[get_db] = overide_get_db
+app.dependency_overrides[GetUser] = overide_get_user
 
 def test_read_all_order():
     response = client.get("/")

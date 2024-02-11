@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Path, Request
 from typing import Annotated, Optional
 from pydantic import BaseModel, Field
-from schemas.database import engine, begin
-import schemas.model_db as model_db
-from schemas.model_db import Order
+from ..schemas.database import engine, begin
+from ..schemas import model_db as model_db
+from ..schemas.model_db import Order
 from .user import GetUser
 from starlette import status
 from sqlalchemy.orm import Session
@@ -13,7 +13,7 @@ from fastapi.templating import Jinja2Templates
 
 order = APIRouter()
 model_db.data.metadata.create_all(bind = engine)
-template = Jinja2Templates(directory= "templates")
+template = Jinja2Templates(directory= "app/templates")
 
 
 def get_db():
@@ -42,7 +42,8 @@ class OrderForm(BaseModel):
 
 @order.get("/test")
 async def test(request : Request):
-    return template.TemplateResponse("edit-todo.html", {"request" : request})
+    return template.TemplateResponse("login.html", {"request" : request})
+
 #Get all order in db
 @order.get("/",status_code= status.HTTP_200_OK, response_description= {200 : {"description" : "Getting all of user order"}})
 async def get_all_orders(db: db_dependency, user : user_dependancy):

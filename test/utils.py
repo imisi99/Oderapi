@@ -1,19 +1,19 @@
 from sqlalchemy import create_engine,text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
-from schemas.database import data
-from schemas.model_db import Order, User
+from app.schemas.database import data
+from app.schemas.model_db import Order, User
 import pytest
-import main
+from app.main import app
 from fastapi.testclient import TestClient
-from routers.user import hash
+from app.routers.user import hash
 
 
-database = "sqlite:///.testdb.sqlite"
+database = "sqlite:///testdb.sqlite"
 engine = create_engine(
     database,
     connect_args= {"check_same_thread" : False},
-    poolclass= StaticPool,
+    poolclass= StaticPool
 
 )
 test_begin = sessionmaker(bind= engine, autocommit = False, autoflush = False)
@@ -23,6 +23,7 @@ def overide_get_db():
     db = test_begin()
     try:
         yield db 
+
     finally:
         db.close
 
@@ -31,7 +32,7 @@ def overide_get_user():
     return {"username" : "Imisioluwa23", "user_id" : 1}
 
 
-client = TestClient(main.app)
+client = TestClient(app)
 
 
 @pytest.fixture
@@ -70,3 +71,4 @@ def test_user():
     with engine.connect() as connection:
         connection.execute(text("DELETE FROM 'users';"))
         connection.commit()
+        print("user table deleted")
