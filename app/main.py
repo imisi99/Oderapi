@@ -10,7 +10,6 @@ static = os.path.join(base, 'static')
 app = FastAPI()
 app.include_router(order, prefix="/order", tags=["Order"])
 app.include_router(user, prefix="/user", tags=["User"])
-app.mount("/app/static", StaticFiles(directory=static), name="static")
 
 
 @app.get("/")
