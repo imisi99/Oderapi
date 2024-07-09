@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field, EmailStr, validator
+from pydantic import BaseModel, Field, EmailStr, field_validator
 from typing import Annotated
 from passlib.context import CryptContext
 from ..schemas.database import engine, begin
@@ -103,7 +103,7 @@ class UserForm(BaseModel):
                                       " and one special character.")
     phone_number: str = Field()
 
-    @validator("password")
+    @field_validator("password")
     def check_password(cls, value):
         if len(value) < 8:
             raise ValueError("Password must be at least 8 characters long")
@@ -114,7 +114,7 @@ class UserForm(BaseModel):
 
         return value
 
-    @validator("username")
+    @field_validator("username")
     def check_username(cls, value):
         if len(value) < 8:
             raise ValueError("Username must be at least 8 characters long")
@@ -198,7 +198,7 @@ class new_form(BaseModel):
     password: str
     confirm_password: str
 
-    @validator("password")
+    @field_validator("password")
     def check_password(cls, value):
         if len(value) < 8:
             raise ValueError("Password must be at least 8 character long")
