@@ -135,7 +135,7 @@ class UserForm(BaseModel):
         }
 
 
-# User signup route
+# User signup router
 @user.post("/signup", status_code=status.HTTP_201_CREATED,
            response_description={201: {"description": "User has successfully signed up"}})
 async def user_signup(user: UserForm, db: db_dependency):
@@ -175,7 +175,7 @@ async def user_signup(user: UserForm, db: db_dependency):
     return "User has been created successfully."
 
 
-# User login route
+# User login router
 @user.post("/login", status_code=status.HTTP_202_ACCEPTED,
            response_description={202: {"description": "User has successfully logged in"}})
 async def user_login(form: Annotated[OAuth2PasswordRequestForm, Depends()], db: db_dependency):

@@ -15,7 +15,7 @@ def mock_db():
         yield mocked
 
 
-# testing a post route
+# testing a post router
 def test_create_order(mock_db):
     test_order = {
         "customer_name": "Isong Imisioluwa",
@@ -29,7 +29,7 @@ def test_create_order(mock_db):
     assert response.json() == "Order created successfully"
 
 
-#testing a get all data route
+#testing a get all data router
 def test_get_all_order(mock_db):
     mock_db.return_value.query.return_value.all.return_value = [
         Order(id=1, customer_name="Isong Imisioluwa", customer_order="Bread and Beans", price=1234, checked_out=False),
